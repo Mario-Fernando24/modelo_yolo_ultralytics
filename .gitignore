@@ -1,0 +1,13 @@
+.venv/
+__pycache__/
+*.py[cod]
+.DS_Store
+.ruff_cache/
+.pytest_cache/
+
+ml/data/
+ml/runs/
+ml/outputs/
+ml/*.pt
+ml/weights/*.pt
+!ml/weights/.gitkeep

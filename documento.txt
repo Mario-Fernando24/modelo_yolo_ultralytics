@@ -1,0 +1,6 @@
+source ../.venv/bin/activate
+python predict.py ruta/a/una/foto.jpg
+
+
+vuelvo a entrenarlo 
+python train.py --epochs 20
