@@ -10,11 +10,11 @@ class Base(DeclarativeBase):
     pass
 
 
-connect_args = {}
+connect_args = {"connect_timeout": 10}
 if DATABASE_URL.startswith("sqlite"):
-    connect_args["check_same_thread"] = False
+    connect_args = {"check_same_thread": False}
 
-engine = create_engine(DATABASE_URL, connect_args=connect_args)
+engine = create_engine(DATABASE_URL, connect_args=connect_args, pool_pre_ping=True)
 SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False)
 
 

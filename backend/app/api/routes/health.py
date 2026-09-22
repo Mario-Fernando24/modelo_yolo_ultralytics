@@ -1,7 +1,4 @@
-from fastapi import APIRouter, Depends
-
-from ..deps import get_detector
-from ...services.detector_service import DetectorService
+from fastapi import APIRouter, Request
 
 router = APIRouter(tags=["salud"])
 
@@ -18,5 +15,8 @@ def root():
 
 
 @router.get("/health")
-def health(detector: DetectorService = Depends(get_detector)):
+def health(request: Request):
+    detector = getattr(request.app.state, "detector", None)
+    if detector is None:
+        return {"status": "starting", "model": None}
     return {"status": "ok", "model": detector.model_name}
