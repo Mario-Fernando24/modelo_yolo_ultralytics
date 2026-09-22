@@ -100,41 +100,37 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      - name: Despliegue omitido
-        if: >-
-          github.event_name != 'pull_request' &&
-          (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main') &&
-          (secrets.GCP_SA_KEY == '' || secrets.GCP_PROJECT_ID == '' || secrets.DATABASE_URL == '')
+      - name: Decidir despliegue
+        id: deploy
+        env:
+          GCP_SA_KEY: ${{ secrets.GCP_SA_KEY }}
+          GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          EVENT_NAME: ${{ github.event_name }}
+          REF_NAME: ${{ github.ref }}
         run: |
-          echo "::warning::No se desplegó. Crea los secrets GCP_SA_KEY, GCP_PROJECT_ID y DATABASE_URL en el repositorio (no en un fork)."
+          enabled=false
+          if [ "$EVENT_NAME" != "pull_request" ] && { [ "$REF_NAME" = "refs/heads/master" ] || [ "$REF_NAME" = "refs/heads/main" ]; }; then
+            if [ -n "$GCP_SA_KEY" ] && [ -n "$GCP_PROJECT_ID" ] && [ -n "$DATABASE_URL" ]; then
+              enabled=true
+            else
+              echo "::warning::No se desplegó. Crea los secrets GCP_SA_KEY, GCP_PROJECT_ID y DATABASE_URL en el repositorio."
+            fi
+          fi
+          echo "enabled=${enabled}" >> "$GITHUB_OUTPUT"
 
       - name: Autenticar en Google Cloud
-        if: >-
-          github.event_name != 'pull_request' &&
-          (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main') &&
-          secrets.GCP_SA_KEY != '' &&
-          secrets.GCP_PROJECT_ID != '' &&
-          secrets.DATABASE_URL != ''
+        if: steps.deploy.outputs.enabled == 'true'
         uses: google-github-actions/auth@v3
         with:
           credentials_json: ${{ secrets.GCP_SA_KEY }}
 
       - name: Instalar gcloud
-        if: >-
-          github.event_name != 'pull_request' &&
-          (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main') &&
-          secrets.GCP_SA_KEY != '' &&
-          secrets.GCP_PROJECT_ID != '' &&
-          secrets.DATABASE_URL != ''
+        if: steps.deploy.outputs.enabled == 'true'
         uses: google-github-actions/setup-gcloud@v3
 
       - name: Publicar y desplegar en Cloud Run
-        if: >-
-          github.event_name != 'pull_request' &&
-          (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main') &&
-          secrets.GCP_SA_KEY != '' &&
-          secrets.GCP_PROJECT_ID != '' &&
-          secrets.DATABASE_URL != ''
+        if: steps.deploy.outputs.enabled == 'true'
         env:
           GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
