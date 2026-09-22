@@ -1,4 +1,15 @@
 services:
+  api:
+    build: .
+    ports:
+      - "8001:8080"
+    environment:
+      DATABASE_URL: postgresql+psycopg://visionai:visionai@db:5432/visionai
+      PORT: "8080"
+    depends_on:
+      db:
+        condition: service_healthy
+
   db:
     image: postgres:16
     environment:

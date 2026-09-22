@@ -11,5 +11,6 @@ ml/outputs/
 ml/*.pt
 ml/weights/*.pt
 !ml/weights/.gitkeep
+!ml/weights/visionai_yolo8n.pt
 backend/data/
 backend/**/__pycache__/
