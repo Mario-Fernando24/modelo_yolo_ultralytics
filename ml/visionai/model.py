@@ -33,6 +33,37 @@ class Detection:
         return asdict(self)
 
 
+@dataclass(frozen=True, slots=True)
+class PredictResult:
+    detections: list[Detection]
+    width: int
+    height: int
+
+
+def decode_source(image: str | Path | bytes | bytearray | Any) -> Any:
+    if isinstance(image, (bytes, bytearray, memoryview)):
+        import cv2
+        import numpy as np
+
+        buffer = np.frombuffer(bytes(image), dtype=np.uint8)
+        bgr = cv2.imdecode(buffer, cv2.IMREAD_COLOR)
+        if bgr is None:
+            raise ValueError("No se pudo decodificar la imagen")
+        return cv2.cvtColor(bgr, cv2.COLOR_BGR2RGB)
+    if isinstance(image, Path):
+        return str(image)
+    return image
+
+
+def _orig_size(result: Any, source: Any) -> tuple[int, int]:
+    shape = getattr(result, "orig_shape", None)
+    if shape is not None and len(shape) >= 2:
+        return int(shape[0]), int(shape[1])
+    if hasattr(source, "shape"):
+        return int(source.shape[0]), int(source.shape[1])
+    return 0, 0
+
+
 def select_device() -> str:
     import torch
 
@@ -73,10 +104,22 @@ class VisionAIYOLO:
             return None
         return [COCO80_INDEX[name] for name in VISIONAI_CLASS_NAMES]
 
-    def predict(self, image: str | Path, confidence: float | None = None) -> list[Detection]:
+    def predict(
+        self,
+        image: str | Path | bytes | bytearray | Any,
+        confidence: float | None = None,
+    ) -> list[Detection]:
+        return self.predict_detailed(image, confidence=confidence).detections
+
+    def predict_detailed(
+        self,
+        image: str | Path | bytes | bytearray | Any,
+        confidence: float | None = None,
+    ) -> PredictResult:
         conf = self.confidence if confidence is None else confidence
+        source = decode_source(image)
         kwargs: dict[str, Any] = {
-            "source": str(image),
+            "source": source,
             "conf": conf,
             "device": self.device,
             "verbose": False,
@@ -86,18 +129,24 @@ class VisionAIYOLO:
 
         results = self.model.predict(**kwargs)
         if not results:
-            return []
-        return _detections_from_result(results[0])
+            return PredictResult(detections=[], width=0, height=0)
+        result = results[0]
+        height, width = _orig_size(result, source)
+        return PredictResult(
+            detections=_detections_from_result(result),
+            width=width,
+            height=height,
+        )
 
     def annotate(
         self,
-        image: str | Path,
+        image: str | Path | bytes | bytearray | Any,
         output: str | Path,
         confidence: float | None = None,
     ) -> Path:
         conf = self.confidence if confidence is None else confidence
         kwargs: dict[str, Any] = {
-            "source": str(image),
+            "source": decode_source(image),
             "conf": conf,
             "device": self.device,
             "verbose": False,

@@ -11,3 +11,5 @@ ml/outputs/
 ml/*.pt
 ml/weights/*.pt
 !ml/weights/.gitkeep
+backend/data/
+backend/**/__pycache__/

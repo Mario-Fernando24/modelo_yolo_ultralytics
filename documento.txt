@@ -4,3 +4,9 @@ python predict.py ruta/a/una/foto.jpg
 
 vuelvo a entrenarlo 
 python train.py --epochs 20
+
+Si reinicias el Mac:
+
+docker compose up -d db
+PYTHONPATH=. .venv/bin/uvicorn backend.app.main:app --host 0.0.0.0 --port 8001
+cd mobile && flutter run

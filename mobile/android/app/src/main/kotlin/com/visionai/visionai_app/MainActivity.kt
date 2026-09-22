@@ -1,0 +1,5 @@
+package com.visionai.visionai_app
+
+import io.flutter.embedding.android.FlutterActivity
+
+class MainActivity : FlutterActivity()
