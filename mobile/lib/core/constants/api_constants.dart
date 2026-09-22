@@ -11,9 +11,9 @@ class ApiConstants {
       return envUrl;
     }
     if (Platform.isAndroid) {
-      return 'http://192.168.0.25:8001';
+      return 'https://modelo-yolo-ultralytics-767768515623.us-central1.run.app';
     }
-    return 'http://192.168.0.25:8001';
+    return 'https://modelo-yolo-ultralytics-767768515623.us-central1.run.app';
   }
 }
 

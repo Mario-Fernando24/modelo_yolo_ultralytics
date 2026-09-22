@@ -11,7 +11,7 @@ from fastapi.staticfiles import StaticFiles
 from .api.deps import get_or_load_detector
 from .api.routes import captures, detect, health
 from .core.config import UPLOAD_DIR
-from .core.database import Base, engine
+from .core.database import Base, engine, log_db_error, safe_db_target
 from .models import Capture  # noqa: F401  — registra la tabla en metadata
 
 logger = logging.getLogger("visionai")
@@ -19,10 +19,12 @@ logger = logging.getLogger("visionai")
 
 def _prepare(app: FastAPI) -> None:
     """Carga tablas y YOLO después de que el puerto ya esté abierto."""
+    logger.info("Preparando base de datos. %s", safe_db_target())
     try:
         Base.metadata.create_all(bind=engine)
-    except Exception:
-        logger.exception("No se pudieron crear las tablas. Revisa DATABASE_URL y la conexión a Cloud SQL.")
+        logger.info("Tablas listas")
+    except Exception as exc:
+        log_db_error(exc)
     try:
         get_or_load_detector(app)
     except Exception:
